@@ -33,7 +33,6 @@ namespace tests
 
             _context = new AppDbContext(options);
 
-            // Seed the database with initial data
             SeedDatabase();
 
             _configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
@@ -42,43 +41,7 @@ namespace tests
             _controller = new UserController(_context, _configuration);
         }
 
-        private void SeedDatabase()
-        {
-            var users = new[]
-            {
-            new UserModel
-            {
-                UserId = Guid.NewGuid().ToString(),
-                FirstName = "Alice",
-                LastName = "Smith",
-                Email = "alice.smith@example.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("Password123"),
-                Phone = "1111111111"
-            },
-            new UserModel
-            {
-                UserId = Guid.NewGuid().ToString(),
-                FirstName = "Bob",
-                LastName = "Johnson",
-                Email = "bob.johnson@example.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("Password123"),
-                Phone = "2222222222"
-            },
-            new UserModel
-            {
-                UserId = Guid.NewGuid().ToString(),
-                FirstName = "Charlie",
-                LastName = "Brown",
-                Email = "charlie.brown@example.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("Password123"),
-                Phone = "3333333333"
-            }
-        };
-
-            _context.Users.AddRange(users);
-            _context.SaveChanges();
-        }
-
+  
         [Fact]
         public async Task Register_Should_Return_Created_On_Success()
         {
@@ -229,5 +192,43 @@ namespace tests
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+
+        private void SeedDatabase()
+        {
+            var users = new[]
+            {
+                new UserModel
+                {
+                    UserId = Guid.NewGuid().ToString(),
+                    FirstName = "Alice",
+                    LastName = "Smith",
+                    Email = "alice.smith@example.com",
+                    Password = BCrypt.Net.BCrypt.HashPassword("Password123"),
+                    Phone = "1111111111"
+                },
+                new UserModel
+                {
+                    UserId = Guid.NewGuid().ToString(),
+                    FirstName = "Bob",
+                    LastName = "Johnson",
+                    Email = "bob.johnson@example.com",
+                    Password = BCrypt.Net.BCrypt.HashPassword("Password123"),
+                    Phone = "2222222222"
+                },
+                new UserModel
+                {
+                    UserId = Guid.NewGuid().ToString(),
+                    FirstName = "Charlie",
+                    LastName = "Brown",
+                    Email = "charlie.brown@example.com",
+                    Password = BCrypt.Net.BCrypt.HashPassword("Password123"),
+                    Phone = "3333333333"
+                }
+            };
+
+            _context.Users.AddRange(users);
+            _context.SaveChanges();
+        }
+
     }
 }
