@@ -15,7 +15,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 namespace HNGBackendTwo.Controllers
 {
     //[Route("api/[controller]")]
-    [Route("api/")]
+    //[Route("api/")]
+    [Route("")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [ApiController]
     public class UserController : ControllerBase
@@ -30,7 +31,8 @@ namespace HNGBackendTwo.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("register")]
+        //[Route("auth/register")]
+        [HttpPost("auth/register")]
         public async Task<IActionResult> Register(UserRegistrationDto dto)
         {
             if (!ModelState.IsValid)
@@ -90,7 +92,7 @@ namespace HNGBackendTwo.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("login")]
+        [HttpPost("auth/login")]
         public async Task<IActionResult> Login(UserLoginDto dto)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
@@ -103,7 +105,7 @@ namespace HNGBackendTwo.Controllers
             return Ok(new { status = "success", message = "Login successful", data = new { accessToken = token, user = new { user.UserId, user.FirstName, user.LastName, user.Email, user.Phone } } });
         }
 
-        [HttpGet("users/{id}")]
+        [HttpGet("api/users/{id}")]
         public async Task<IActionResult> GetUser(string id)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
@@ -120,7 +122,7 @@ namespace HNGBackendTwo.Controllers
             return Ok(new { status = "success", message = "User retrieved", data = new { user.UserId, user.FirstName, user.LastName, user.Email, user.Phone } });
         }
 
-        [HttpGet("organisations")]
+        [HttpGet("api/organisations")]
         public async Task<IActionResult> GetOrganisations()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
@@ -131,7 +133,7 @@ namespace HNGBackendTwo.Controllers
             return Ok(new { status = "success", message = "Organisations retrieved", data = new { organisations = organisations.Select(o => new { o.OrgId, o.Name, o.Description }) } });
         }
 
-        [HttpGet("{orgId}")]
+        [HttpGet("api/organisations/{orgId}")]
         public async Task<IActionResult> GetOrganisation(string orgId)
         {
             var organisation = await _context.Organisations.FindAsync(orgId);
@@ -157,7 +159,7 @@ namespace HNGBackendTwo.Controllers
             });
         }
 
-        [HttpPost("organisation")]
+        [HttpPost("api/organisations")]
         public async Task<IActionResult> CreateOrganisation([FromBody] OrganisationDto dto)
         {
             if (!ModelState.IsValid)
@@ -200,7 +202,7 @@ namespace HNGBackendTwo.Controllers
             });
         }
 
-        [HttpPost("{orgId}/users")]
+        [HttpPost("api/organisations/{orgId}/users")]
         public async Task<IActionResult> AddUserToOrganisation(string orgId, [FromBody] string userId)
         {
             var organisation = await _context.Organisations.FindAsync(orgId);
