@@ -4,6 +4,8 @@ using HNGBackendTwo;
 using HNGBackendTwo.Data;
 using HNGBackendTwo.Validations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -73,17 +75,39 @@ builder.Services.AddSwaggerGen(c =>
         });
 });
 
+if (!builder.Environment.IsDevelopment())
+{
+    // Proxy Server Config
+    builder.Services.Configure<ForwardedHeadersOptions>(
+          options =>
+          {
+              options.ForwardedHeaders =
+                  ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+          });
+
+    //Persist key
+    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo("/var/keys"));
+}
+builder.WebHost.UseKestrel(options => options.AddServerHeader = false);
+
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+//Configure the HTTP request pipeline.
+if (!app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+
 app.UseHttpsRedirection();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 
 app.UseAuthentication();
 app.UseAuthorization();
