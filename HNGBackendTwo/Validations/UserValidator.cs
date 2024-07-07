@@ -3,7 +3,7 @@ using HNGBackendTwo.Models;
 
 namespace HNGBackendTwo.Validations
 {
-    public class UserValidator : AbstractValidator<UserModel>
+    public class UserValidator : AbstractValidator<User>
     {
         public UserValidator()
         {
@@ -14,7 +14,7 @@ namespace HNGBackendTwo.Validations
         }
     }
 
-    public class OrganisationValidator : AbstractValidator<OrganisationModel>
+    public class OrganisationValidator : AbstractValidator<Organisation>
     {
         public OrganisationValidator()
         {

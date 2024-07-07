@@ -40,40 +40,40 @@ namespace HNGBackendTwo.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OrganisationModelUserModel",
+                name: "OrganisationUsers",
                 columns: table => new
                 {
-                    OrganisationsOrgId = table.Column<string>(type: "text", nullable: false),
-                    UsersUserId = table.Column<string>(type: "text", nullable: false)
+                    OrganisationId = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OrganisationModelUserModel", x => new { x.OrganisationsOrgId, x.UsersUserId });
+                    table.PrimaryKey("PK_OrganisationUsers", x => new { x.OrganisationId, x.UserId });
                     table.ForeignKey(
-                        name: "FK_OrganisationModelUserModel_Organisations_OrganisationsOrgId",
-                        column: x => x.OrganisationsOrgId,
+                        name: "FK_OrganisationUsers_Organisations_OrganisationId",
+                        column: x => x.OrganisationId,
                         principalTable: "Organisations",
                         principalColumn: "OrgId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_OrganisationModelUserModel_Users_UsersUserId",
-                        column: x => x.UsersUserId,
+                        name: "FK_OrganisationUsers_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrganisationModelUserModel_UsersUserId",
-                table: "OrganisationModelUserModel",
-                column: "UsersUserId");
+                name: "IX_OrganisationUsers_UserId",
+                table: "OrganisationUsers",
+                column: "UserId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "OrganisationModelUserModel");
+                name: "OrganisationUsers");
 
             migrationBuilder.DropTable(
                 name: "Organisations");

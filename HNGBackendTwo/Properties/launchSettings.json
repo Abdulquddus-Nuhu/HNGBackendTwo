@@ -6,7 +6,7 @@
       "launchUrl": "swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "DB_CONNECTION": "Host=localhost;Database=HNGBackendTwo_Db;password=master;username=postgres;"
+        "DB_CONNECTION": "Host=localhost;Database=HNGBackendTwo1_Db;password=master;username=postgres;"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5206"

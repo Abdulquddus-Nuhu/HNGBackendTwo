@@ -4,14 +4,21 @@ namespace HNGBackendTwo.Dtos
 {
     public class UserRegistrationDto
     {
-        [Required]
+
+        [Required(ErrorMessage = "FirstName is required.")]
         public string FirstName { get; set; }
-        [Required]
+
+        [Required(ErrorMessage = "LastName is required.")]
         public string LastName { get; set; }
-        [Required]
+
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "Invalid Email Address.")]
         public string Email { get; set; }
-        [Required]
+
+        [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; }
+
         public string Phone { get; set; }
+
     }
 }

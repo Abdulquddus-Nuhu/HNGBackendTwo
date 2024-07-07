@@ -2,7 +2,7 @@
 
 namespace HNGBackendTwo.Models
 {
-    public class UserModel
+    public class User
     {
         [Key]
         public string UserId { get; set; }
@@ -11,9 +11,10 @@ namespace HNGBackendTwo.Models
         public string Email { get; set; }
         public string Password { get; set; }
         public string Phone { get; set; }
-        public ICollection<OrganisationModel> Organisations { get; set; }
+        public ICollection<OrganisationUser> OrganisationUsers { get; set; }
 
-        public UserModel()
+
+        public User()
         {
             UserId = Guid.NewGuid().ToString();
         }

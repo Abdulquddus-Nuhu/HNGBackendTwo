@@ -21,7 +21,7 @@ namespace HNGBackendTwo.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("HNGBackendTwo.Models.OrganisationModel", b =>
+            modelBuilder.Entity("HNGBackendTwo.Models.Organisation", b =>
                 {
                     b.Property<string>("OrgId")
                         .HasColumnType("text");
@@ -38,7 +38,22 @@ namespace HNGBackendTwo.Migrations
                     b.ToTable("Organisations");
                 });
 
-            modelBuilder.Entity("HNGBackendTwo.Models.UserModel", b =>
+            modelBuilder.Entity("HNGBackendTwo.Models.OrganisationUser", b =>
+                {
+                    b.Property<string>("OrganisationId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.HasKey("OrganisationId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("OrganisationUsers");
+                });
+
+            modelBuilder.Entity("HNGBackendTwo.Models.User", b =>
                 {
                     b.Property<string>("UserId")
                         .HasColumnType("text");
@@ -68,34 +83,33 @@ namespace HNGBackendTwo.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("OrganisationModelUserModel", b =>
+            modelBuilder.Entity("HNGBackendTwo.Models.OrganisationUser", b =>
                 {
-                    b.Property<string>("OrganisationsOrgId")
-                        .HasColumnType("text");
+                    b.HasOne("HNGBackendTwo.Models.Organisation", "Organisation")
+                        .WithMany("OrganisationUsers")
+                        .HasForeignKey("OrganisationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Property<string>("UsersUserId")
-                        .HasColumnType("text");
+                    b.HasOne("HNGBackendTwo.Models.User", "User")
+                        .WithMany("OrganisationUsers")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.HasKey("OrganisationsOrgId", "UsersUserId");
+                    b.Navigation("Organisation");
 
-                    b.HasIndex("UsersUserId");
-
-                    b.ToTable("OrganisationModelUserModel");
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("OrganisationModelUserModel", b =>
+            modelBuilder.Entity("HNGBackendTwo.Models.Organisation", b =>
                 {
-                    b.HasOne("HNGBackendTwo.Models.OrganisationModel", null)
-                        .WithMany()
-                        .HasForeignKey("OrganisationsOrgId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("OrganisationUsers");
+                });
 
-                    b.HasOne("HNGBackendTwo.Models.UserModel", null)
-                        .WithMany()
-                        .HasForeignKey("UsersUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+            modelBuilder.Entity("HNGBackendTwo.Models.User", b =>
+                {
+                    b.Navigation("OrganisationUsers");
                 });
 #pragma warning restore 612, 618
         }

@@ -13,13 +13,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using Xunit;
 
 namespace tests
 {
     public class UserControllerTests
     {
-        private Mock<AppDbContext> _contextMock;
         private readonly AppDbContext _context;
         private readonly UserController _controller;
         private readonly IConfiguration _configuration;
@@ -29,7 +29,6 @@ namespace tests
             var options = new DbContextOptionsBuilder<AppDbContext>()
                 .UseInMemoryDatabase(databaseName: "TestDatabase")
                 .Options;
-            _contextMock = new Mock<AppDbContext>();
 
             _context = new AppDbContext(options);
 
@@ -84,6 +83,7 @@ namespace tests
             Assert.Equal(422, unprocessableEntityResult.StatusCode);
         }
 
+
         [Fact]
         public async Task Login_Should_Return_Ok_On_Success()
         {
@@ -99,15 +99,19 @@ namespace tests
             Assert.NotNull(okResult);
             Assert.Equal(200, okResult.StatusCode);
 
-            dynamic response = okResult.Value;
-            Assert.NotNull(response);
+            var responseObject = JsonSerializer.Serialize(okResult.Value);
+            using var document = JsonDocument.Parse(responseObject);
+            var root = document.RootElement;
 
-            string token = response.data.accessToken;
+            Assert.True(root.TryGetProperty("data", out var data));
+            Assert.True(data.TryGetProperty("accessToken", out var accessTokenElement));
+
+            var token = accessTokenElement.GetString();
             Assert.NotNull(token);
 
             var handler = new JwtSecurityTokenHandler();
             var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
-            var emailClaim = jsonToken.Claims.First(claim => claim.Type == ClaimTypes.Email).Value;
+            var emailClaim = jsonToken.Claims.First(claim => claim.Type == "unique_name").Value;
 
             Assert.Equal(loginDto.Email, emailClaim);
         }
@@ -150,7 +154,6 @@ namespace tests
         }
 
 
-
         [Fact]
         public async Task GetOrganisations_Should_Return_Ok_On_Success()
         {
@@ -161,8 +164,8 @@ namespace tests
             {
                 User = new ClaimsPrincipal(new ClaimsIdentity(new[]
                 {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId)
-            }))
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId)
+                }))
             };
 
             var result = await _controller.GetOrganisations();
@@ -172,7 +175,89 @@ namespace tests
             Assert.Equal(200, okResult.StatusCode);
         }
 
-        private string GenerateJwtToken(UserModel user)
+        [Fact]
+        public async Task GetOrganisation_Should_Return_Ok_On_Existing_Organisation()
+        {
+            var organisation = await _context.Organisations.FirstAsync();
+            var result = await _controller.GetOrganisation(organisation.OrgId);
+            var okResult = result as OkObjectResult;
+
+            Assert.NotNull(okResult);
+            Assert.Equal(200, okResult.StatusCode);
+
+            var responseObject = JsonSerializer.Serialize(okResult.Value);
+            using var document = JsonDocument.Parse(responseObject);
+            var root = document.RootElement;
+
+            Assert.True(root.TryGetProperty("data", out var data));
+            Assert.Equal(organisation.OrgId, data.GetProperty("OrgId").GetString());
+            Assert.Equal(organisation.Name, data.GetProperty("Name").GetString());
+            Assert.Equal(organisation.Description, data.GetProperty("Description").GetString());
+        }
+
+        [Fact]
+        public async Task GetOrganisation_Should_Return_NotFound_On_Nonexistent_Organisation()
+        {
+            var nonExistingOrgId = "825fb3ea-5cc9-4b48-93ff-d2e5c5a6f624";
+
+            var result = await _controller.GetOrganisation(nonExistingOrgId);
+            var notFoundResult = result as NotFoundObjectResult;
+
+            Assert.NotNull(notFoundResult);
+            Assert.Equal(404, notFoundResult.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateOrganisation_Should_Return_CreatedAtAction_On_Success()
+        {
+            var dto = new OrganisationDto
+            {
+                Name = "NewOrg",
+                Description = "New Organisation"
+            };
+
+            var user = await _context.Users.FirstAsync();
+            var token = GenerateJwtToken(user);
+
+            _controller.ControllerContext.HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId)
+                }))
+            };
+
+            var result = await _controller.CreateOrganisation(dto);
+            var createdAtActionResult = result as CreatedAtActionResult;
+
+            Assert.NotNull(createdAtActionResult);
+            Assert.Equal(201, createdAtActionResult.StatusCode);
+
+            var responseObject = JsonSerializer.Serialize(createdAtActionResult.Value);
+            using var document = JsonDocument.Parse(responseObject);
+            var root = document.RootElement;
+
+            Assert.True(root.TryGetProperty("data", out var data));
+            Assert.Equal(dto.Name, data.GetProperty("Name").GetString());
+            Assert.Equal(dto.Description, data.GetProperty("Description").GetString());
+        }
+
+        [Fact]
+        public async Task CreateOrganisation_Should_Return_BadRequest_On_Invalid_Model()
+        {
+            var invalidDto = new OrganisationDto(); 
+
+            _controller.ModelState.AddModelError("Name", "The Name field is required.");
+
+            var result = await _controller.CreateOrganisation(invalidDto);
+            var badRequestResult = result as BadRequestObjectResult;
+
+            Assert.NotNull(badRequestResult);
+            Assert.Equal(400, badRequestResult.StatusCode);
+        }
+
+
+        private string GenerateJwtToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]);
@@ -182,7 +267,6 @@ namespace tests
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.UserId),
                     new Claim(ClaimTypes.Email, user.Email),
-                    //new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
                 Issuer = _configuration["Jwt:Issuer"],
@@ -197,7 +281,7 @@ namespace tests
         {
             var users = new[]
             {
-                new UserModel
+                new User
                 {
                     UserId = Guid.NewGuid().ToString(),
                     FirstName = "Alice",
@@ -206,7 +290,7 @@ namespace tests
                     Password = BCrypt.Net.BCrypt.HashPassword("Password123"),
                     Phone = "1111111111"
                 },
-                new UserModel
+                new User
                 {
                     UserId = Guid.NewGuid().ToString(),
                     FirstName = "Bob",
@@ -215,7 +299,7 @@ namespace tests
                     Password = BCrypt.Net.BCrypt.HashPassword("Password123"),
                     Phone = "2222222222"
                 },
-                new UserModel
+                new User
                 {
                     UserId = Guid.NewGuid().ToString(),
                     FirstName = "Charlie",
