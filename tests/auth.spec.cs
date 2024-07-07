@@ -40,7 +40,6 @@ namespace tests
             _controller = new UserController(_context, _configuration);
         }
 
-  
         [Fact]
         public async Task Register_Should_Return_Created_On_Success()
         {
@@ -83,6 +82,59 @@ namespace tests
             Assert.Equal(422, unprocessableEntityResult.StatusCode);
         }
 
+        [Fact]
+        public async Task Register_Should_Return_UnprocessableEntity_On_Duplicate_UserId()
+        {
+            var existingUser = _context.Users.AsNoTracking().FirstOrDefault();
+
+            var userDto = new UserRegistrationDto
+            {
+                FirstName = "Test",
+                LastName = "User",
+                Email = "test.user@example.com",
+                Password = "Password123",
+                Phone = "1234567890"
+            };
+
+            var user = new User
+            {
+                UserId = existingUser.UserId,
+                FirstName = userDto.FirstName,
+                LastName = userDto.LastName,
+                Email = userDto.Email,
+                Password = BCrypt.Net.BCrypt.HashPassword(userDto.Password),
+                Phone = userDto.Phone
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var result = await _controller.Register(userDto);
+            var unprocessableEntityResult = result as UnprocessableEntityObjectResult;
+
+            Assert.NotNull(unprocessableEntityResult);
+            Assert.Equal(422, unprocessableEntityResult.StatusCode);
+        }
+
+        [Fact]
+        public async Task Register_Should_Return_UnprocessableEntity_On_Missing_Required_Fields()
+        {
+            var userDto = new UserRegistrationDto
+            {
+                Email = "john.doe@example.com",
+                Password = "Password123",
+                Phone = "1234567890"
+            };
+
+            _controller.ModelState.AddModelError("FirstName", "The FirstName field is required.");
+            _controller.ModelState.AddModelError("LastName", "The LastName field is required.");
+
+            var result = await _controller.Register(userDto);
+            var unprocessableEntityResult = result as UnprocessableEntityObjectResult;
+
+            Assert.NotNull(unprocessableEntityResult);
+            Assert.Equal(422, unprocessableEntityResult.StatusCode);
+        }
 
         [Fact]
         public async Task Login_Should_Return_Ok_On_Success()
@@ -152,7 +204,6 @@ namespace tests
             Assert.NotNull(okResult);
             Assert.Equal(200, okResult.StatusCode);
         }
-
 
         [Fact]
         public async Task GetOrganisations_Should_Return_Ok_On_Success()
@@ -245,7 +296,7 @@ namespace tests
         [Fact]
         public async Task CreateOrganisation_Should_Return_BadRequest_On_Invalid_Model()
         {
-            var invalidDto = new OrganisationDto(); 
+            var invalidDto = new OrganisationDto();
 
             _controller.ModelState.AddModelError("Name", "The Name field is required.");
 
@@ -256,6 +307,44 @@ namespace tests
             Assert.Equal(400, badRequestResult.StatusCode);
         }
 
+        [Fact]
+        public async Task AddUserToOrganisation_Should_Return_Ok_On_Success()
+        {
+            var organisation = await _context.Organisations.FirstAsync();
+            var user = await _context.Users.Skip(1).FirstAsync();
+
+            var result = await _controller.AddUserToOrganisation(organisation.OrgId, user.UserId);
+            var okResult = result as OkObjectResult;
+
+            Assert.NotNull(okResult);
+            Assert.Equal(200, okResult.StatusCode);
+        }
+
+        [Fact]
+        public async Task AddUserToOrganisation_Should_Return_NotFound_On_Nonexistent_Organisation()
+        {
+            var nonExistingOrgId = "825fb3ea-5cc9-4b48-93ff-d2e5c5a6f624";
+            var user = await _context.Users.FirstAsync();
+
+            var result = await _controller.AddUserToOrganisation(nonExistingOrgId, user.UserId);
+            var notFoundResult = result as NotFoundObjectResult;
+
+            Assert.NotNull(notFoundResult);
+            Assert.Equal(404, notFoundResult.StatusCode);
+        }
+
+        [Fact]
+        public async Task AddUserToOrganisation_Should_Return_NotFound_On_Nonexistent_User()
+        {
+            var organisation = await _context.Organisations.FirstAsync();
+            var nonExistingUserId = "1234567890abcdef";
+
+            var result = await _controller.AddUserToOrganisation(organisation.OrgId, nonExistingUserId);
+            var notFoundResult = result as NotFoundObjectResult;
+
+            Assert.NotNull(notFoundResult);
+            Assert.Equal(404, notFoundResult.StatusCode);
+        }
 
         private string GenerateJwtToken(User user)
         {
@@ -309,10 +398,23 @@ namespace tests
                     Phone = "3333333333"
                 }
             };
+            var organizations = new[]
+            {
+                new Organisation
+                {
+                    Name = "First",
+                    Description = "new org",
+                },
+                new Organisation
+                {
+                    Name = "Second",
+                    Description = "Second new org",
+                },
+            };
 
             _context.Users.AddRange(users);
+            _context.Organisations.AddRange(organizations);
             _context.SaveChanges();
         }
-
     }
 }
